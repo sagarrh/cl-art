@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import ffmpeg
 
 # Define a more detailed set of ASCII characters
 ASCII_CHARS = "@#S%?*+;:,. "
@@ -26,29 +25,16 @@ def frame_to_ascii(frame, width=120):
     return ascii_frame
 
 def main():
-    # Capture the RTMP stream
-    stream_url = 'rtmp://127.0.0.1/live'  # Replace with your RTMP server URL
-    process = (
-        ffmpeg
-        .input(stream_url)
-        .output('pipe:', format='rawvideo', pix_fmt='bgr24')
-        .run_async(pipe_stdout=True)
-    )
-
-    width = 640
-    height = 480
-
+    # Open the default video camera
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Unable to open the camera")
+        return
+    
     while True:
-        # Read a frame from the stream
-        in_bytes = process.stdout.read(width * height * 3)
-        if not in_bytes:
+        ret, frame = cap.read()
+        if not ret:
             break
-        
-        frame = (
-            np
-            .frombuffer(in_bytes, np.uint8)
-            .reshape([height, width, 3])
-        )
         
         # Convert frame to ASCII art
         ascii_frame = frame_to_ascii(frame)
@@ -59,5 +45,11 @@ def main():
         # Print the ASCII art to the terminal
         print(ascii_frame)
         
+        # Exit on ESC key press
+        if cv2.waitKey(1) == 27:
+            break
+    
+    cap.release()
+
 if __name__ == "__main__":
     main()
